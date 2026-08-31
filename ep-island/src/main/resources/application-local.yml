@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:54329/episland}
+    username: ${DB_USER:episland}
+    password: ${DB_PASSWORD:episland}
+    hikari:
+      maximum-pool-size: 8
+  sql:
+    init:
+      mode: always
+
+server:
+  port: ${PORT:25074}
+
+logging:
+  level:
+    ru.itmo.episland: DEBUG

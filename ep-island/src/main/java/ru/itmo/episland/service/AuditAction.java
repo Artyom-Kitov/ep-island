@@ -1,0 +1,17 @@
+package ru.itmo.episland.service;
+
+public enum AuditAction {
+    CREATE,
+    STATUS_CHANGE,
+    DELETE,
+    REGISTER,
+    CORRECT,
+    DELETE_DUPLICATE,
+    ASSIGN,
+    TRANSFORMATION_RECORDED,
+    SHEARING_COMPLETED,
+    ENERGY_RECORDED,
+    ENERGY_CORRECTED,
+    ACCOUNTING_DELIVERY,
+    ACCOUNTING_RETRY
+}
