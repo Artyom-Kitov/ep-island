@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS ep_audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS ep_referral_status_idx ON ep_referral(status);
+CREATE INDEX IF NOT EXISTS ep_debtor_full_name_idx ON ep_debtor(LOWER(full_name));
 CREATE INDEX IF NOT EXISTS ep_resident_status_idx ON ep_resident(status);
 CREATE INDEX IF NOT EXISTS ep_audit_created_idx ON ep_audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS ep_energy_delivery_idx

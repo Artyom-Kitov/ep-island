@@ -97,10 +97,12 @@ public class EnergyService {
     }
 
     @Transactional
-    public void retryPendingDeliveries() {
-        for (Long id : repository.findPendingShiftIds(50)) {
+    public int retryPendingDeliveries() {
+        List<Long> pendingIds = repository.findPendingShiftIds(50);
+        for (Long id : pendingIds) {
             deliver(id, SYSTEM_ACTOR, ACCOUNTING_RETRY);
         }
+        return pendingIds.size();
     }
 
     private EnergyShift deliver(long id, String actor, AuditAction action) {

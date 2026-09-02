@@ -28,6 +28,18 @@ public class ReferralRepository {
         return jdbc.query(BASE_SELECT + " ORDER BY r.created_at DESC", ReferralRepository::map);
     }
 
+    public List<Referral> searchPendingArrival(String fullName, int limit) {
+        String pattern = "%" + fullName.trim() + "%";
+        return jdbc.query(BASE_SELECT + """
+             LEFT JOIN ep_resident resident ON resident.referral_id = r.id
+             WHERE resident.id IS NULL
+               AND r.status IN ('CREATED', 'HANDED_TO_CONVOY')
+               AND (? = '%%' OR d.full_name ILIKE ?)
+             ORDER BY r.created_at DESC
+             LIMIT ?
+            """, ReferralRepository::map, pattern, pattern, limit);
+    }
+
     public Optional<Referral> findById(long id) {
         return first(jdbc.query(BASE_SELECT + " WHERE r.id = ?", ReferralRepository::map, id));
     }

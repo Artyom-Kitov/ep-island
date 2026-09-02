@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.itmo.episland.auth.Access;
 import ru.itmo.episland.auth.Role;
 import ru.itmo.episland.auth.SessionUser;
+import ru.itmo.episland.events.LiveUpdateScope;
+import ru.itmo.episland.events.LiveUpdateService;
 import ru.itmo.episland.referral.CreateReferralData;
 import ru.itmo.episland.referral.Referral;
 import ru.itmo.episland.referral.ReferralService;
@@ -36,16 +38,26 @@ import java.util.List;
 public class ReferralController {
     private final ReferralService service;
     private final Access access;
+    private final LiveUpdateService liveUpdates;
 
-    public ReferralController(ReferralService service, Access access) {
+    public ReferralController(ReferralService service, Access access, LiveUpdateService liveUpdates) {
         this.service = service;
         this.access = access;
+        this.liveUpdates = liveUpdates;
     }
 
     @GetMapping
     public List<Referral> list(HttpServletRequest request) {
         access.user(request);
         return service.list();
+    }
+
+    @GetMapping("/search")
+    public List<Referral> search(@RequestParam(defaultValue = "") String fullName,
+                                 @RequestParam(defaultValue = "12") int limit,
+                                 HttpServletRequest request) {
+        access.user(request);
+        return service.searchPendingArrival(fullName, limit);
     }
 
     @GetMapping("/{id}")
@@ -66,14 +78,18 @@ public class ReferralController {
                            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                            HttpServletRequest request) {
         SessionUser user = access.require(request, Role.OFFICER);
-        return service.create(body.toData(), idempotencyKey, user.username());
+        Referral created = service.create(body.toData(), idempotencyKey, user.username());
+        liveUpdates.publish(LiveUpdateScope.REFERRALS, created.id());
+        return created;
     }
 
     @PatchMapping("/{id}/status")
     public Referral updateStatus(@PathVariable long id, @Valid @RequestBody StatusRequest body,
                                  HttpServletRequest request) {
         SessionUser user = access.require(request, Role.OFFICER);
-        return service.updateStatus(id, body.status(), user.username());
+        Referral updated = service.updateStatus(id, body.status(), user.username());
+        liveUpdates.publish(LiveUpdateScope.REFERRALS, id);
+        return updated;
     }
 
     @DeleteMapping("/{id}")
@@ -81,6 +97,7 @@ public class ReferralController {
     public void delete(@PathVariable long id, HttpServletRequest request) {
         SessionUser user = access.require(request, Role.OFFICER);
         service.delete(id, user.username());
+        liveUpdates.publish(LiveUpdateScope.REFERRALS, id);
     }
 
     public record CreateReferralRequest(

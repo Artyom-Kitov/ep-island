@@ -40,9 +40,9 @@ public class ResidentRepository {
         return first(jdbc.query(BASE_SELECT + " WHERE p.referral_id = ?", ResidentRepository::map, referralId));
     }
 
-    public boolean existsActiveReferral(long referralId) {
+    public boolean existsReferralReadyForArrival(long referralId) {
         Integer count = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM ep_referral WHERE id = ? AND status <> 'CANCELLED'",
+            "SELECT COUNT(*) FROM ep_referral WHERE id = ? AND status = 'HANDED_TO_CONVOY'",
             Integer.class, referralId);
         return count != null && count > 0;
     }

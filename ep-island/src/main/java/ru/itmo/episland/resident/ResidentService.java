@@ -40,8 +40,9 @@ public class ResidentService {
 
     @Transactional
     public Resident register(long referralId, String actor) {
-        if (!repository.existsActiveReferral(referralId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Действующее направление не найдено");
+        if (!repository.existsReferralReadyForArrival(referralId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Направление не передано конвою или не найдено");
         }
         repository.findByReferralId(referralId).ifPresent(duplicate -> {
             throw new ResponseStatusException(HttpStatus.CONFLICT,

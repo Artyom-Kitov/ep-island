@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {api} from '../api.js';
 import {Badge, Empty, Loading, RefreshButton, SubmitButton, dateTime, number} from '../components/UI.jsx';
 
-export default function EnergyView({user, notify}) {
+export default function EnergyView({user, notify, liveUpdate}) {
     const [shearings, setShearings] = useState([]);
     const [shifts, setShifts] = useState([]);
     const [shiftCode, setShiftCode] = useState('');
@@ -21,6 +21,9 @@ export default function EnergyView({user, notify}) {
     }, [notify]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        if (liveUpdate && ['ALL', 'ZONES', 'ENERGY'].includes(liveUpdate.scope)) load();
+    }, [liveUpdate, load]);
 
     async function createShift(event) {
         event.preventDefault();

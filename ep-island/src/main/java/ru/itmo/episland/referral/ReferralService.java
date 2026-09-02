@@ -30,6 +30,15 @@ public class ReferralService {
         return repository.findAll();
     }
 
+    public List<Referral> searchPendingArrival(String fullName, int limit) {
+        String normalized = fullName == null ? "" : fullName.trim();
+        if (!normalized.isEmpty() && normalized.length() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Для поиска по ФИО введите не менее двух символов");
+        }
+        return repository.searchPendingArrival(normalized, Math.max(1, Math.min(limit, 50)));
+    }
+
     public Referral get(long id) {
         return repository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Направление не найдено"));

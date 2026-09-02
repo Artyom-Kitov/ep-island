@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {api} from '../api.js';
 import {Badge, Empty, Loading, RefreshButton, SubmitButton, loadTone} from '../components/UI.jsx';
 
-export default function ZonesView({user, notify}) {
+export default function ZonesView({user, notify, liveUpdate}) {
     const [zones, setZones] = useState([]);
     const [residents, setResidents] = useState([]);
     const [assignments, setAssignments] = useState([]);
@@ -25,6 +25,9 @@ export default function ZonesView({user, notify}) {
     }, [notify]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        if (liveUpdate && ['ALL', 'RESIDENTS', 'ZONES'].includes(liveUpdate.scope)) load();
+    }, [liveUpdate, load]);
 
     async function recommend() {
         if (!residentId) return notify('Выберите коротышку', 'error');

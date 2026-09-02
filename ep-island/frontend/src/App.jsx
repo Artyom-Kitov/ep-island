@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {api, onUnauthorized} from './api.js';
 import {NAVIGATION, PAGE_META, ROLE_VIEWS, VIEW_ROLES} from './constants.js';
 import {Brand, Notice, useNotify} from './components/UI.jsx';
@@ -24,6 +24,7 @@ export default function App() {
     const [booting, setBooting] = useState(true);
     const [view, setView] = useState('dashboard');
     const [notice, setNotice] = useState(null);
+    const [liveUpdate, setLiveUpdate] = useState(null);
     const notify = useNotify(setNotice);
 
     useEffect(() => {
@@ -46,6 +47,19 @@ export default function App() {
         const timeout = setTimeout(() => setNotice(null), 4800);
         return () => clearTimeout(timeout);
     }, [notice]);
+
+    useEffect(() => {
+        if (!user) return undefined;
+        const events = new EventSource('/api/events');
+        events.onmessage = event => {
+            try {
+                setLiveUpdate(JSON.parse(event.data));
+            } catch (_) {
+                // Heartbeats and malformed events do not affect application state.
+            }
+        };
+        return () => events.close();
+    }, [user]);
 
     if (booting) {
         return <div className="login-screen"><div className="boot-card"><div className="brand-mark">◇</div><span>Запуск EP Island…</span></div></div>;
@@ -87,9 +101,8 @@ export default function App() {
         <main className="main">
             <header className="page-header">
                 <div><p className="eyebrow">{kicker}</p><h2>{title}</h2></div>
-                <div className="system-state"><i/><span>Система работает штатно</span></div>
             </header>
-            <CurrentView user={user} notify={notify}/>
+            <CurrentView user={user} notify={notify} liveUpdate={liveUpdate}/>
         </main>
         <Notice notice={notice}/>
     </div>;

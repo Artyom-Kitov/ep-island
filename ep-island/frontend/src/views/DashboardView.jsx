@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {api} from '../api.js';
 import {Empty, Loading, RefreshButton, loadTone, number} from '../components/UI.jsx';
 
-export default function DashboardView({notify}) {
+export default function DashboardView({notify, liveUpdate}) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -18,6 +18,7 @@ export default function DashboardView({notify}) {
     }, [notify]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => { if (liveUpdate) load(); }, [liveUpdate]);
     if (loading && !data) return <Loading/>;
     if (!data) return <Empty>Данные дашборда недоступны</Empty>;
 

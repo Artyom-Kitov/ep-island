@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.itmo.episland.auth.Access;
 import ru.itmo.episland.auth.Role;
 import ru.itmo.episland.auth.SessionUser;
+import ru.itmo.episland.events.LiveUpdateScope;
+import ru.itmo.episland.events.LiveUpdateService;
 import ru.itmo.episland.resident.Resident;
 import ru.itmo.episland.resident.ResidentService;
 import ru.itmo.episland.resident.ResidentStatus;
@@ -30,10 +32,12 @@ import java.util.List;
 public class ResidentController {
     private final ResidentService service;
     private final Access access;
+    private final LiveUpdateService liveUpdates;
 
-    public ResidentController(ResidentService service, Access access) {
+    public ResidentController(ResidentService service, Access access, LiveUpdateService liveUpdates) {
         this.service = service;
         this.access = access;
+        this.liveUpdates = liveUpdates;
     }
 
     @GetMapping
@@ -53,14 +57,19 @@ public class ResidentController {
     @ResponseStatus(HttpStatus.CREATED)
     public Resident register(@Valid @RequestBody RegisterResidentRequest body, HttpServletRequest request) {
         SessionUser user = access.require(request, Role.REGISTRAR);
-        return service.register(body.referralId(), user.username());
+        Resident resident = service.register(body.referralId(), user.username());
+        liveUpdates.publish(LiveUpdateScope.RESIDENTS, resident.id());
+        return resident;
     }
 
     @PatchMapping("/{id}")
     public Resident update(@PathVariable String id, @Valid @RequestBody UpdateResidentRequest body,
                            HttpServletRequest request) {
         SessionUser user = access.require(request, Role.REGISTRAR);
-        return service.update(id, new UpdateResidentData(body.fullName(), body.birthDate()), user.username());
+        Resident resident = service.update(id,
+            new UpdateResidentData(body.fullName(), body.birthDate()), user.username());
+        liveUpdates.publish(LiveUpdateScope.RESIDENTS, id);
+        return resident;
     }
 
     @DeleteMapping("/{id}")
@@ -68,6 +77,7 @@ public class ResidentController {
     public void delete(@PathVariable String id, HttpServletRequest request) {
         SessionUser user = access.require(request, Role.REGISTRAR);
         service.delete(id, user.username());
+        liveUpdates.publish(LiveUpdateScope.RESIDENTS, id);
     }
 
     public record RegisterResidentRequest(@NotNull Long referralId) {

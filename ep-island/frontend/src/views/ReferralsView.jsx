@@ -4,7 +4,7 @@ import {Badge, Empty, Loading, RefreshButton, SubmitButton, dateTime, number} fr
 
 const EMPTY_FORM = {fullName: '', birthDate: '', debtAmount: '', reason: '', documents: ''};
 
-export default function ReferralsView({user, notify}) {
+export default function ReferralsView({user, notify, liveUpdate}) {
     const [rows, setRows] = useState([]);
     const [form, setForm] = useState(EMPTY_FORM);
     const [registry, setRegistry] = useState(null);
@@ -20,6 +20,9 @@ export default function ReferralsView({user, notify}) {
     }, [notify]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        if (liveUpdate && ['ALL', 'REFERRALS'].includes(liveUpdate.scope)) load();
+    }, [liveUpdate, load]);
 
     function field(name) {
         return {value: form[name], onChange: event => setForm(current => ({...current, [name]: event.target.value}))};

@@ -5,9 +5,9 @@ spring:
     password: ${DB_PASSWORD:episland}
     hikari:
       maximum-pool-size: 8
-  sql:
-    init:
-      mode: always
+  flyway:
+    default-schema: ${DB_SCHEMA:public}
+    schemas: ${DB_SCHEMA:public}
 
 server:
   port: ${PORT:25074}

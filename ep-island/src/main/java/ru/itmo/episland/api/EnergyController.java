@@ -20,6 +20,8 @@ import ru.itmo.episland.auth.SessionUser;
 import ru.itmo.episland.energy.EnergyService;
 import ru.itmo.episland.energy.EnergyShift;
 import ru.itmo.episland.energy.Shearing;
+import ru.itmo.episland.events.LiveUpdateScope;
+import ru.itmo.episland.events.LiveUpdateService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,10 +31,12 @@ import java.util.List;
 public class EnergyController {
     private final EnergyService service;
     private final Access access;
+    private final LiveUpdateService liveUpdates;
 
-    public EnergyController(EnergyService service, Access access) {
+    public EnergyController(EnergyService service, Access access, LiveUpdateService liveUpdates) {
         this.service = service;
         this.access = access;
+        this.liveUpdates = liveUpdates;
     }
 
     @GetMapping("/shearings")
@@ -46,7 +50,9 @@ public class EnergyController {
                                      @Valid @RequestBody ShearingRequest body,
                                      HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ENGINEER);
-        return service.completeShearing(residentId, body.woolKg(), user.username());
+        Shearing shearing = service.completeShearing(residentId, body.woolKg(), user.username());
+        liveUpdates.publish(LiveUpdateScope.ENERGY, residentId);
+        return shearing;
     }
 
     @GetMapping("/shifts")
@@ -60,7 +66,9 @@ public class EnergyController {
     public EnergyShift createShift(@Valid @RequestBody EnergyShiftRequest body,
                                    HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ENGINEER);
-        return service.createShift(body.shiftCode(), body.actualKwh(), user.username());
+        EnergyShift shift = service.createShift(body.shiftCode(), body.actualKwh(), user.username());
+        liveUpdates.publish(LiveUpdateScope.ENERGY, shift.id());
+        return shift;
     }
 
     @PatchMapping("/shifts/{id}")
@@ -68,13 +76,17 @@ public class EnergyController {
                                     @Valid @RequestBody EnergyShiftCorrection body,
                                     HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ENGINEER);
-        return service.correctShift(id, body.actualKwh(), user.username());
+        EnergyShift shift = service.correctShift(id, body.actualKwh(), user.username());
+        liveUpdates.publish(LiveUpdateScope.ENERGY, id);
+        return shift;
     }
 
     @PostMapping("/shifts/{id}/retry")
     public EnergyShift retry(@PathVariable long id, HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ENGINEER);
-        return service.retryDelivery(id, user.username());
+        EnergyShift shift = service.retryDelivery(id, user.username());
+        liveUpdates.publish(LiveUpdateScope.ENERGY, id);
+        return shift;
     }
 
     public record ShearingRequest(@NotNull @DecimalMin("0.1") BigDecimal woolKg) {

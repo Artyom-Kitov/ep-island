@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.itmo.episland.auth.Access;
 import ru.itmo.episland.auth.Role;
 import ru.itmo.episland.auth.SessionUser;
+import ru.itmo.episland.events.LiveUpdateScope;
+import ru.itmo.episland.events.LiveUpdateService;
 import ru.itmo.episland.zone.Zone;
 import ru.itmo.episland.zone.ZoneAssignment;
 import ru.itmo.episland.zone.ZoneRecommendation;
@@ -30,10 +32,12 @@ import java.util.List;
 public class ZoneController {
     private final ZoneService service;
     private final Access access;
+    private final LiveUpdateService liveUpdates;
 
-    public ZoneController(ZoneService service, Access access) {
+    public ZoneController(ZoneService service, Access access, LiveUpdateService liveUpdates) {
         this.service = service;
         this.access = access;
+        this.liveUpdates = liveUpdates;
     }
 
     @GetMapping
@@ -58,7 +62,9 @@ public class ZoneController {
     @ResponseStatus(HttpStatus.CREATED)
     public ZoneAssignment assign(@Valid @RequestBody AssignmentRequest body, HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ZONE_OPERATOR);
-        return service.assign(body.residentId(), body.zoneId(), user.username());
+        ZoneAssignment assignment = service.assign(body.residentId(), body.zoneId(), user.username());
+        liveUpdates.publish(LiveUpdateScope.ZONES, assignment.id());
+        return assignment;
     }
 
     @PatchMapping("/assignments/{id}/transformation")
@@ -66,7 +72,12 @@ public class ZoneController {
                                     @Valid @RequestBody TransformationRequest body,
                                     HttpServletRequest request) {
         SessionUser user = access.require(request, Role.ZONE_OPERATOR);
-        return service.recordTransformation(id, body.percent(), user.username());
+        ZoneAssignment assignment = service.recordTransformation(id, body.percent(), user.username());
+        liveUpdates.publish(LiveUpdateScope.ZONES, id);
+        if (assignment.transformationPercent() == 100) {
+            liveUpdates.publish(LiveUpdateScope.ENERGY, assignment.residentId());
+        }
+        return assignment;
     }
 
     public record AssignmentRequest(@NotBlank String residentId, @NotNull Long zoneId) {

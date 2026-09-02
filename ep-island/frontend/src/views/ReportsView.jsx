@@ -9,7 +9,7 @@ function defaultFilters() {
     return {from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10), zoneId: '', stage: '', referralStatus: ''};
 }
 
-export default function ReportsView({notify}) {
+export default function ReportsView({notify, liveUpdate}) {
     const [zones, setZones] = useState([]);
     const [filters, setFilters] = useState(defaultFilters);
     const [rows, setRows] = useState([]);
@@ -18,6 +18,12 @@ export default function ReportsView({notify}) {
     const [busy, setBusy] = useState(false);
 
     useEffect(() => { api('/api/zones').then(setZones).catch(error => notify(error.message, 'error')); }, [notify]);
+    useEffect(() => {
+        if (!liveUpdate || !built) return;
+        const nextQuery = query || params();
+        api(`/api/analytics/report?${nextQuery}`).then(setRows)
+            .catch(error => notify(error.message, 'error'));
+    }, [liveUpdate]);
 
     function field(name) {
         return {value: filters[name], onChange: event => setFilters(current => ({...current, [name]: event.target.value}))};
